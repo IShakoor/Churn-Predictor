@@ -94,3 +94,63 @@ def flag_high_spenders(df, column='TotalSpent', percentile=0.99):
     df['HighSpender'] = df[column] > threshold
 
     return df
+
+# performing feature engineering
+def add_engineered_features(df):
+    df = df.copy()
+    today = pd.to_datetime("2025-06-16") # fixed 
+
+    # find the unresolved rate
+    def calc_unresolved_rate(statuses):
+        if not isinstance(statuses, (list, np.ndarray)):
+            return 0
+        if len(statuses) == 0:
+            return 0
+        unresolved = sum(1 for s in statuses if isinstance(s, str) and s.lower() == 'unresolved')
+        return unresolved / len(statuses)
+
+    df['UnresolvedInteractionRate'] = df['ResolutionStatusList'].apply(calc_unresolved_rate)
+
+    # interaction recency (days)
+    df['InteractionRecency'] = df['InteractionDateList'].apply(
+        lambda dates: (today - max(dates)).days if dates else np.nan
+    )
+
+    # has interacted (binary)
+    df['HasInteracted'] = df['NumInteractions'].apply(lambda x: int(x > 0))
+
+    # avg transaction amount
+    df['AvgSpentPerTransaction'] = df['TotalSpent'] / df['NumTransactions'].replace(0, np.nan)
+
+    # transaction recency
+    df['TransactionRecency'] = df['TransactionDate_<lambda>'].apply(
+        lambda dates: (today - max(dates)).days if dates else np.nan
+    )
+
+    # unique categories
+    df['UniqueProductCategories'] = df['ProductCategoryList'].apply(
+        lambda lst: len(set(lst)) if isinstance(lst, list) else 0
+    )
+
+    # days since last login
+    df['DaysSinceLastLogin'] = (today - pd.to_datetime(df['LastLoginDate'], errors='coerce')).dt.days
+
+    return df
+
+# remove unneccessary columns
+def drop_unnecessary_columns(df):
+    cols_to_drop = [
+        'CustomerID',
+        'TransactionIDList',
+        'TransactionDate_<lambda>',
+        'InteractionIDList',
+        'InteractionID_<lambda_0>',
+        'InteractionDateList',
+        'InteractionTypeList',
+        'ResolutionStatusList',
+        'LastLoginDate',
+        'ProductCategoryList',
+        'AmountSpentList'
+    ]
+    df = df.drop(columns=[col for col in cols_to_drop if col in df.columns], errors='ignore')
+    return df
