@@ -1,4 +1,9 @@
 import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, f1_score, precision_recall_curve
+import xgboost as xgb
 
 # load data from Excel
 customer_demographics = pd.read_excel('Customer_Churn_Data_Large.xlsx', sheet_name=0)
@@ -153,4 +158,54 @@ def drop_unnecessary_columns(df):
         'AmountSpentList'
     ]
     df = df.drop(columns=[col for col in cols_to_drop if col in df.columns], errors='ignore')
+    return df
+
+# encoding categorical cols
+def encode_categorical_features(df):
+    df = df.copy()
+    
+    # categorical cols
+    categorical_cols = [
+        'Gender',
+        'MaritalStatus',
+        'IncomeLevel',
+        'LoginFrequency',
+        'ServiceUsage'
+    ]
+
+    # check cols exist
+    cols_to_encode = [col for col in categorical_cols if col in df.columns]
+
+    # encoding
+    df_encoded = pd.get_dummies(df, columns=cols_to_encode, drop_first=True)
+
+    return df_encoded
+
+# normalise numerical features
+def normalize_numerical_features(df):
+    df = df.copy()
+    
+    # numerical cols
+    numerical_cols = [
+        'Age',
+        'TotalSpent',
+        'NumTransactions',
+        'NumInteractions',
+        'HighSpender',
+        'UnresolvedInteractionRate',
+        'InteractionRecency',
+        'HasInteracted',
+        'AvgSpentPerTransaction',
+        'TransactionRecency',
+        'UniqueProductCategories',
+        'DaysSinceLastLogin'
+    ]
+
+    # check cols exist
+    cols_to_scale = [col for col in numerical_cols if col in df.columns]
+
+    # noralise cols
+    scaler = MinMaxScaler()
+    df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+
     return df
