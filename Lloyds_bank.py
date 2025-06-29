@@ -209,3 +209,61 @@ def normalize_numerical_features(df):
     df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
 
     return df
+
+# clean & encode data
+df = aggregate_customer_level_data(merge_customer_data())
+flagged_df = flag_high_spenders(df)
+engineered_df = add_engineered_features(flagged_df)
+clean_df = drop_unnecessary_columns(engineered_df)
+clean_df = clean_df.drop(columns=['CustomerID', 'LastLoginDate'], errors='ignore')
+encoded_df = encode_categorical_features(clean_df)
+encoded_df = encoded_df.dropna(subset=['ChurnStatus'])
+
+# separate features
+X = encoded_df.drop(columns=['ChurnStatus'])
+y = encoded_df['ChurnStatus'].astype(int)
+
+# train & test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# train XGBmodel
+xgb_model = xgb.XGBClassifier(
+    objective='binary:logistic',
+    eval_metric='logloss',
+    use_label_encoder=False,
+    scale_pos_weight=12,
+    learning_rate=0.05,        
+    max_depth=5,               
+    n_estimators=200,          
+    subsample=1,             
+    colsample_bytree=1,      
+    reg_alpha=0.5,             
+    reg_lambda=1.0,            
+    random_state=42
+)
+
+xgb_model.fit(X_train, y_train)
+
+# evaluate model
+y_pred = xgb_model.predict(X_test)
+y_proba = xgb_model.predict_proba(X_test)[:, 1]
+
+precision, recall, thresholds = precision_recall_curve(y_test, y_proba)
+y_pred = (y_proba >= 0.12).astype(int)
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+print("ROC-AUC Score:", roc_auc_score(y_test, y_proba))
+print("F1 Score:", f1_score(y_test, y_pred))
+
+# cross validation
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+f1_scores = cross_val_score(xgb_model, X, y, cv=cv, scoring='f1')
+print("Cross-validated F1 scores:", f1_scores)
+print("Mean F1 score:", np.mean(f1_scores))
