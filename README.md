@@ -1,6 +1,5 @@
 # 🧠 Customer Churn Predictor
-This project presents a complete machine learning pipeline for predicting customer churn in a banking environment. Using behavioral and demographic data from multiple sources, the goal is to help financial institutions proactively identify customers at high risk of churning. Through data exploration, preprocessing, and model development, this solution enables targeted retention strategies to improve customer loyalty.
-
+This project presents a complete machine learning pipeline for predicting customer churn in a banking environment by leveraging multi-source behavioral and demographic data. It aims to help financial institutions proactively identify customers at high risk of churning through data exploration, preprocessing, and the development of an XGBoost-based model. The model achieves a strong ROC-AUC, enabling banks to implement targeted retention strategies that reduce costly churn and enhance customer loyalty.
 
 ## 📌 Problem Statement
 Customer churn is a major challenge in the financial services industry. Retaining existing customers is significantly more cost-effective than acquiring new ones. By identifying early signals of potential churn, businesses can proactively engage at-risk customers and improve long-term loyalty.
